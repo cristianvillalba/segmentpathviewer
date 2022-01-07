@@ -41,6 +41,15 @@ public class Main extends SimpleApplication implements ActionListener{
     public static int width = 1024;
     public static int height = 1024;
     
+    private float lasti = 0.0f;
+    private int cross = 1;
+    private int segmentnumber = 3;
+    private ArrayList<Float> allcross = new ArrayList<Float>();
+    
+    private ArrayList<Float> rotspeedconstant = new ArrayList<Float>();
+    private ArrayList<Float> rotspeedfaster = new ArrayList<Float>();
+    private ArrayList<Float> rotspeedslower = new ArrayList<Float>();
+    
     public static void main(String[] args) {
         Main app = new Main();
         app.start();
@@ -54,7 +63,26 @@ public class Main extends SimpleApplication implements ActionListener{
         InitAxis();
         InitSegments();
         
+        InitSpeeds();
+        
         InitViewer();
+        
+        registerInput();
+    }
+    
+    private void InitSpeeds()
+    {
+        rotspeedconstant.add(0.5f);
+        rotspeedconstant.add(0.5f);
+        rotspeedconstant.add(0.5f);
+        
+        rotspeedfaster.add(0.5f);
+        rotspeedfaster.add(0.75f);
+        rotspeedfaster.add(1.0f);
+        
+        rotspeedslower.add(0.5f);
+        rotspeedslower.add(0.4f);
+        rotspeedslower.add(0.3f);
     }
     
     private void InitViewer()
@@ -85,8 +113,9 @@ public class Main extends SimpleApplication implements ActionListener{
     public void registerInput()
     {
         inputManager.addMapping("save",new KeyTrigger(keyInput.KEY_1));
+        inputManager.addMapping("print",new KeyTrigger(keyInput.KEY_2));
         inputManager.addListener(this, "save");
-        
+        inputManager.addListener(this, "print");
     }
     
     private Geometry GenerateLine(float r0, float i0, float r1, float i1, int index)
@@ -156,9 +185,9 @@ public class Main extends SimpleApplication implements ActionListener{
     {
         Node prevnode = rootNode;
         
-        for (int i = 0; i < 4 ; i++)
+        for (int i = 0; i < segmentnumber ; i++)
         {
-            Pivot pivot = new Pivot(prevnode, assetManager, i);
+            Pivot pivot = new Pivot(prevnode, assetManager, i, 0.0f);
             prevnode = pivot.GetPivotEnd();
             
             allpivots.add(pivot);
@@ -172,18 +201,42 @@ public class Main extends SimpleApplication implements ActionListener{
             Pivot piv = allpivots.get(i);
             
             Node pivotNode = piv.GetMainPivot();
-            Node pivotEnd = piv.GetPivotEnd();
+           
+                        
+            //pivotNode.rotate(0.0f, 0.0f, -tpf*0.5f);//constant rotation on each segment
+            //pivotNode.rotate(0.0f, 0.0f, -tpf*(0.5f+i*0.1f));//faster rotation on each segment
+            pivotNode.rotate(0.0f, 0.0f, -tpf*(0.5f-i*0.1f));//slower rotation on each segment
             
-            //pivotNode.rotate(0.0f, 0.0f, -tpf*0.01f*(i + 1.0f)*10.0f);
-            pivotNode.rotate(0.0f, 0.0f, (-tpf*0.01f*50.0f)/i);
+            //hardcoded speeds
+            //pivotNode.rotate(0.0f, 0.0f, -tpf*rotspeedconstant.get(i));
+            //pivotNode.rotate(0.0f, 0.0f, -tpf*rotspeedfaster.get(i));
+            //pivotNode.rotate(0.0f, 0.0f, -tpf*rotspeedslower.get(i));
             
-            int x = (int)(pivotEnd.getWorldTranslation().x * 50);
-            int y = (int)(pivotEnd.getWorldTranslation().y * 50);
+            if (i == (allpivots.size() - 1)) //only draw last segment
+            {
+                Node pivotEnd = piv.GetPivotEnd();
+                int x = (int)(pivotEnd.getWorldTranslation().x * 50);
+                int y = (int)(pivotEnd.getWorldTranslation().y * 50);
+                
+                if (lasti*pivotEnd.getWorldTranslation().y < 0.0f)
+                {
+                    cross++;
+                    System.out.println("cross :" + cross);
+                    
+                    allcross.add(pivotEnd.getWorldTranslation().x);
+                }
+
+                x += width / 2 ;
+                y += height / 2 ;
+
+                if (x >= 0 && x < width && y >= 0 && y < height)
+                {
+                    imageRaster.setPixel(x, y, ColorRGBA.Red);
+                }
+                
+                lasti = pivotEnd.getWorldTranslation().y;
+            }
             
-            x += width / 2 ;
-            y += height / 2 ;
-            
-            imageRaster.setPixel(x, y, ColorRGBA.Red);
         }
     }
 
@@ -205,6 +258,14 @@ public class Main extends SimpleApplication implements ActionListener{
                 
             }
         }
+        
+        if (name.contains("print") && isPressed)
+        {
+            for (int i = 0; i < allcross.size(); i++)
+            {
+                System.out.println(allcross.get(i));
+            }
+        }
     }
     
     public void savePng( File f, Image img ) throws IOException {
@@ -216,3 +277,4 @@ public class Main extends SimpleApplication implements ActionListener{
         }             
     }
 }
+

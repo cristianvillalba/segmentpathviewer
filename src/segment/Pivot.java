@@ -20,7 +20,7 @@ public class Pivot {
     private Node pivot;
     private Node pivotEnd;
     
-    public Pivot(Node father, AssetManager assetManager, int i)
+    public Pivot(Node father, AssetManager assetManager, int i, float beta)
     {
         Box mesh = new Box(1.0f, 0.1f, 0.1f);
         Geometry geo = new Geometry("line", mesh);
@@ -37,7 +37,7 @@ public class Pivot {
         pivot.attachChild(geo);
         pivot.attachChild(pivotEnd);
 
-        pivot.setLocalScale(1.0f / (i*0.05f + 1));
+        pivot.setLocalScale(1.0f / (i*beta + 1));
         father.attachChild(pivot);
     }
     
