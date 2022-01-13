@@ -33,9 +33,9 @@ import java.util.ArrayList;
  * Move your Logic into AppStates or Controls
  * @author normenhansen
  */
-public class Main extends SimpleApplication implements ActionListener{
+public class MainNoLimit extends SimpleApplication implements ActionListener{
     public float scale = 1.0f;
-    private ArrayList<Pivot> allpivots;
+    private ArrayList<PivotNoLimit> allpivots;
     
     private Texture texture;
     private ImageRaster imageRaster;
@@ -45,7 +45,7 @@ public class Main extends SimpleApplication implements ActionListener{
     
     private float lasti = 0.0f;
     private int cross = 1;
-    private int segmentnumber = 15;
+    private int segmentnumber = 200;
     private ArrayList<Float> allcross = new ArrayList<Float>();
     
     private ArrayList<Float> rotspeedconstant = new ArrayList<Float>();
@@ -53,13 +53,13 @@ public class Main extends SimpleApplication implements ActionListener{
     private ArrayList<Float> rotspeedslower = new ArrayList<Float>();
     
     public static void main(String[] args) {
-        Main app = new Main();
+        MainNoLimit app = new MainNoLimit();
         app.start();
     }
 
     @Override
     public void simpleInitApp() {     
-        allpivots = new ArrayList<Pivot>();
+        allpivots = new ArrayList<PivotNoLimit>();
         
         initTexture();
         InitAxis();
@@ -184,13 +184,10 @@ public class Main extends SimpleApplication implements ActionListener{
     
     
     private void InitSegments()
-    {
-        Node prevnode = rootNode;
-        
+    {        
         for (int i = 0; i < segmentnumber ; i++)
         {
-            Pivot pivot = new Pivot(prevnode, assetManager, i, 0.0f); //last parameter is segment size
-            prevnode = pivot.GetPivotEnd();
+            PivotNoLimit pivot = new PivotNoLimit(rootNode, assetManager, i, 0.0f); //last parameter is segment size
             
             allpivots.add(pivot);
         }
@@ -198,11 +195,14 @@ public class Main extends SimpleApplication implements ActionListener{
     
     @Override
     public void simpleUpdate(float tpf) {
+        Node pivbefore = allpivots.get(0).GetPivotEnd();
+        
         for(int i = 1; i < allpivots.size(); i++)
         {
-            Pivot piv = allpivots.get(i);
+            PivotNoLimit piv = allpivots.get(i);
             
             Node pivotNode = piv.GetMainPivot();
+            pivotNode.setLocalTranslation(pivbefore.getWorldTranslation());
            
                         
             //pivotNode.rotate(0.0f, 0.0f, -tpf*0.5f);//constant rotation on each segment
@@ -241,6 +241,8 @@ public class Main extends SimpleApplication implements ActionListener{
                 
                 lasti = pivotEnd.getWorldTranslation().y;
             }
+            
+            pivbefore = piv.GetPivotEnd();
             
         }
     }

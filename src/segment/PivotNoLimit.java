@@ -16,11 +16,11 @@ import com.jme3.scene.shape.Box;
  *
  * @author Cristian.Villalba
  */
-public class Pivot {
+public class PivotNoLimit {
     private Node pivot;
     private Node pivotEnd;
     
-    public Pivot(Node father, AssetManager assetManager, int i, float beta)
+    public PivotNoLimit(Node father, AssetManager assetManager, int i, float beta)
     {
         Box mesh = new Box(1.0f, 0.1f, 0.1f); //a segment with an extension of 2.0
         Geometry geo = new Geometry("line", mesh);
@@ -39,7 +39,7 @@ public class Pivot {
 
         //use segment proportion equal to ETA function
         float base = 1.0f/(i + 1.0f);
-        float segmentsize = (float )Math.pow(base, 0.5f);
+        float segmentsize = (float )Math.pow(base, 0.5f);//on 0.5 will be the "critical line"
         pivot.setLocalScale(segmentsize);
         father.attachChild(pivot);
     }
