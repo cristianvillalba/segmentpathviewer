@@ -22,17 +22,20 @@ public class PivotNoLimit {
     
     public PivotNoLimit(Node father, AssetManager assetManager, int i, float beta)
     {
-        Box mesh = new Box(1.0f, 0.1f, 0.1f); //a segment with an extension of 2.0
+        //Box mesh = new Box(1.0f, 0.1f, 0.1f); //a segment with an extension of 2.0
+        Box mesh = new Box(0.5f, 0.1f, 0.1f); //a segment with an extension of 1.0
         Geometry geo = new Geometry("line", mesh);
        
         Material mat3 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         mat3.setColor("Color", ColorRGBA.Green);
         geo.setMaterial(mat3);
-        geo.setLocalTranslation(1.0f, 0.0f, 0.0f);
+        //geo.setLocalTranslation(1.0f, 0.0f, 0.0f);//a segment with an extension of 2.0
+        geo.setLocalTranslation(0.5f, 0.0f, 0.0f);//a segment with an extension of 1.0
         
         pivot = new Node();
         pivotEnd = new Node();
-        pivotEnd.setLocalTranslation(2.0f, 0.0f, 0.0f);//move the segment with length 2.0 to the end
+        //pivotEnd.setLocalTranslation(2.0f, 0.0f, 0.0f);//move the segment with length 2.0 to the end
+        pivotEnd.setLocalTranslation(1.0f, 0.0f, 0.0f);//move the segment with length 1.0 to the end
         
         pivot.attachChild(geo);
         pivot.attachChild(pivotEnd);
