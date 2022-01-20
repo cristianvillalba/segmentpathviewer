@@ -23,6 +23,7 @@ import com.jme3.util.BufferUtils;
 import com.jme3.util.TempVars;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
  */
 public class MainNoLimit extends SimpleApplication implements ActionListener{
     public float scale = 1.0f;
+    public boolean savetofile = false;
     private ArrayList<PivotNoLimit> allpivots;
     
     private Texture texture;
@@ -70,6 +72,8 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         InitViewer();
         
         registerInput();
+        
+        CreateFile("retamodule.csv");
     }
     
     private void InitSpeeds()
@@ -116,8 +120,10 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
     {
         inputManager.addMapping("save",new KeyTrigger(keyInput.KEY_1));
         inputManager.addMapping("print",new KeyTrigger(keyInput.KEY_2));
+        inputManager.addMapping("toggle", new KeyTrigger(keyInput.KEY_3));
         inputManager.addListener(this, "save");
         inputManager.addListener(this, "print");
+        inputManager.addListener(this, "toggle");
     }
     
     private Geometry GenerateLine(float r0, float i0, float r1, float i1, int index)
@@ -196,6 +202,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
     @Override
     public void simpleUpdate(float tpf) {
         Node pivbefore = allpivots.get(0).GetPivotEnd();
+        boolean savezero = false;
         
         for(int i = 1; i < allpivots.size(); i++)
         {
@@ -226,9 +233,13 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
                 if (lasti*pivotEnd.getWorldTranslation().y < 0.0f)
                 {
                     cross++;
-                    System.out.println("cross :" + cross);
-                    
+                    //System.out.println("cross :" + cross);
                     allcross.add(pivotEnd.getWorldTranslation().x);
+                }
+                
+                if (Math.abs(pivotEnd.getWorldTranslation().length()) < 0.1f)
+                {
+                    savezero = true;
                 }
 
                 x += width / 2 ;
@@ -239,12 +250,61 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
                     imageRaster.setPixel(x, y, ColorRGBA.Red);
                 }
                 
+                if (savetofile)
+                {
+                    WriteToFile("retamodule.csv", "" + pivotEnd.getWorldTranslation().length() + "\n");
+                }
+                
                 lasti = pivotEnd.getWorldTranslation().y;
             }
             
             pivbefore = piv.GetPivotEnd();
             
         }
+        
+        if (savezero)
+        {
+            String segmentdata = "";
+            
+            for (int i = 0; i < allpivots.size(); i++)
+            {
+                PivotNoLimit piv = allpivots.get(i);
+                Node pivotEnd = piv.GetPivotEnd();
+                
+                segmentdata += pivotEnd.getWorldTranslation().x + ", "+ pivotEnd.getWorldTranslation().y + ",";
+            }
+            segmentdata += "\n";
+            
+            WriteToFile("segmentszero.csv", segmentdata);
+        }
+    }
+    
+    private void CreateFile(String name)
+    {
+        try {
+            File myObj = new File(name);
+            if (myObj.createNewFile()) {
+              System.out.println("File created: " + myObj.getName());
+            } else {
+              System.out.println("File already exists.");
+            }
+          } 
+        catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+    }
+    
+    private void WriteToFile(String name, String data){
+        try {
+            FileWriter myWriter = new FileWriter(name, true);
+            myWriter.write(data);
+            myWriter.close();
+            System.out.println("Successfully wrote to the file.");
+          } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+          }
     }
 
     @Override
@@ -272,6 +332,11 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
             {
                 System.out.println(allcross.get(i));
             }
+        }
+        
+        if (name.contains("toggle") && isPressed)
+        {
+            savetofile = !savetofile;
         }
     }
     
