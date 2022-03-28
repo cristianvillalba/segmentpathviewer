@@ -21,6 +21,7 @@ import com.jme3.texture.image.ColorSpace;
 import com.jme3.texture.image.ImageRaster;
 import com.jme3.util.BufferUtils;
 import com.jme3.util.TempVars;
+import java.awt.Point;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This is the Main Class of your Game. You should only do initialization here.
@@ -47,12 +49,15 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
     
     private float lasti = 0.0f;
     private int cross = 1;
-    private int segmentnumber = 200;
+    private int segmentnumber = 6;
     private ArrayList<Float> allcross = new ArrayList<Float>();
     
     private ArrayList<Float> rotspeedconstant = new ArrayList<Float>();
     private ArrayList<Float> rotspeedfaster = new ArrayList<Float>();
     private ArrayList<Float> rotspeedslower = new ArrayList<Float>();
+    
+    private int prevx = width / 2;
+    private int prevy = height/ 2;
     
     public static void main(String[] args) {
         MainNoLimit app = new MainNoLimit();
@@ -217,7 +222,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
             //pivotNode.rotate(0.0f, 0.0f, -tpf*(0.5f-i*0.1f));//slower rotation on each segment
             
             //System.out.println("log: " + Math.log(i));
-            pivotNode.rotate(0.0f, 0.0f, (float)(-tpf*1.0f*Math.log(i + 1))); //attempt to draw ETA based on segment rotation speed (with a ln formula)
+            pivotNode.rotate(0.0f, 0.0f, (float)(-tpf*10.0f*Math.log(i + 1))); //attempt to draw ETA based on segment rotation speed (with a ln formula)
             
             //hardcoded speeds
             //pivotNode.rotate(0.0f, 0.0f, -tpf*rotspeedconstant.get(i));
@@ -248,6 +253,10 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
                 if (x >= 0 && x < width && y >= 0 && y < height)
                 {
                     imageRaster.setPixel(x, y, ColorRGBA.Red);
+                    this.plotLine(this.findLine(prevx, prevy, x, y));
+                            
+                    prevx = x;
+                    prevy = y;
                 }
                 
                 if (savetofile)
@@ -347,6 +356,56 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         } finally {
             out.close();
         }             
+    }
+    
+    /** function findLine() - to find that belong to line connecting the two points **/
+    public List<Point> findLine( int x0, int y0, int x1, int y1) 
+    {                    
+
+        List<Point> line = new ArrayList<Point>();
+
+        int dx = Math.abs(x1 - x0);
+        int dy = Math.abs(y1 - y0);
+
+        int sx = x0 < x1 ? 1 : -1; 
+        int sy = y0 < y1 ? 1 : -1; 
+
+        int err = dx-dy;
+        int e2;
+
+        while (true) 
+        {
+            Point newpoint = new Point(x0, y0);
+            line.add(newpoint);
+
+            if (x0 == x1 && y0 == y1) 
+
+                break;
+
+            e2 = 2 * err;
+
+            if (e2 > -dy) 
+            {
+                err = err - dy;
+                x0 = x0 + sx;
+            }
+
+            if (e2 < dx) 
+            {
+                err = err + dx;
+                y0 = y0 + sy;
+            }
+        }                                
+
+        return line;
+    }
+    
+    public void plotLine(List<Point> data)
+    {
+        for (int i = 0; i < data.size(); i++)
+        {
+            imageRaster.setPixel(data.get(i).x, data.get(i).y, ColorRGBA.Blue);
+        }
     }
 }
 
