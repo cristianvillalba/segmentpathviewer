@@ -42,8 +42,15 @@ public class PivotNoLimit {
 
         //use segment proportion equal to ETA function
         float base = 1.0f/(i + 1.0f);
-        float segmentsize = (float )Math.pow(base, 0.5f);//on 0.5 will be the "critical line"
+        float segmentsize = (float )Math.pow(base, 0.5f);//this will emulate eta, on 0.5 will be the "critical line"
         pivot.setLocalScale(segmentsize);
+        
+        //this will also emulate eta, changing rotation will set the initial conditions of all the segments -1 +1 ... segments
+        if (( i % 2) == 1)
+        {
+            pivot.rotate(0, 0, (float)Math.PI);
+        }
+        
         father.attachChild(pivot);
     }
     

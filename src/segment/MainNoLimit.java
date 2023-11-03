@@ -37,8 +37,9 @@ import java.util.List;
  * @author normenhansen
  */
 public class MainNoLimit extends SimpleApplication implements ActionListener{
-    public float scale = 1.0f;
+    public float scale = 80.0f;
     public boolean savetofile = false;
+    public boolean pausemovement = false;
     private ArrayList<PivotNoLimit> allpivots;
     
     private Texture texture;
@@ -49,7 +50,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
     
     private float lasti = 0.0f;
     private int cross = 1;
-    private int segmentnumber = 6;
+    private int segmentnumber = 500;
     private ArrayList<Float> allcross = new ArrayList<Float>();
     
     private ArrayList<Float> rotspeedconstant = new ArrayList<Float>();
@@ -126,9 +127,13 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         inputManager.addMapping("save",new KeyTrigger(keyInput.KEY_1));
         inputManager.addMapping("print",new KeyTrigger(keyInput.KEY_2));
         inputManager.addMapping("toggle", new KeyTrigger(keyInput.KEY_3));
+        inputManager.addMapping("clean", new KeyTrigger(keyInput.KEY_4));
+        inputManager.addMapping("pause", new KeyTrigger(keyInput.KEY_SPACE));
         inputManager.addListener(this, "save");
         inputManager.addListener(this, "print");
         inputManager.addListener(this, "toggle");
+        inputManager.addListener(this, "clean");
+        inputManager.addListener(this, "pause");
     }
     
     private Geometry GenerateLine(float r0, float i0, float r1, float i1, int index)
@@ -209,6 +214,9 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         Node pivbefore = allpivots.get(0).GetPivotEnd();
         boolean savezero = false;
         
+        if (pausemovement)
+            return;
+        
         for(int i = 1; i < allpivots.size(); i++)
         {
             PivotNoLimit piv = allpivots.get(i);
@@ -222,7 +230,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
             //pivotNode.rotate(0.0f, 0.0f, -tpf*(0.5f-i*0.1f));//slower rotation on each segment
             
             //System.out.println("log: " + Math.log(i));
-            pivotNode.rotate(0.0f, 0.0f, (float)(-tpf*10.0f*Math.log(i + 1))); //attempt to draw ETA based on segment rotation speed (with a ln formula)
+            pivotNode.rotate(0.0f, 0.0f, (float)(-tpf*0.5f*Math.log(i + 1))); //attempt to draw ETA based on segment rotation speed (with a ln formula)
             
             //hardcoded speeds
             //pivotNode.rotate(0.0f, 0.0f, -tpf*rotspeedconstant.get(i));
@@ -232,8 +240,8 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
             if (i == (allpivots.size() - 1)) //only draw last segment
             {
                 Node pivotEnd = piv.GetPivotEnd();
-                int x = (int)(pivotEnd.getWorldTranslation().x * 50);
-                int y = (int)(pivotEnd.getWorldTranslation().y * 50);
+                int x = (int)(pivotEnd.getWorldTranslation().x * 50 * scale);
+                int y = (int)(pivotEnd.getWorldTranslation().y * 50 * scale);
                 
                 if (lasti*pivotEnd.getWorldTranslation().y < 0.0f)
                 {
@@ -347,6 +355,27 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         {
             savetofile = !savetofile;
         }
+        
+        if (name.contains("clean") && isPressed)
+        {
+            cleanImage();
+        }
+        
+        if (name.contains("pause") && isPressed)
+        {
+            pausemovement = !pausemovement;
+        }
+    }
+    
+    public void cleanImage()
+    {
+        for (int i = 0; i < width; i++){
+            for (int j = 0; j < height; j++)
+            {
+                imageRaster.setPixel(i, j, ColorRGBA.Black);
+            }
+        }
+        
     }
     
     public void savePng( File f, Image img ) throws IOException {
