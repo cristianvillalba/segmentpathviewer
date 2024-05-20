@@ -143,10 +143,19 @@ public class SaveToFile extends SimpleApplication implements ActionListener{
     @Override
     public void simpleInitApp() {
         InitAxis();
+        
+        getCamera().setLocation(new Vector3f(0,0,100));
+        getFlyByCamera().setMoveSpeed(50.0f);
+        
+        CalculateGraph();
     }
     
     @Override
     public void simpleUpdate(float tpf) {
+    
+    }
+    
+    private void CalculateGraph() {
         rootNode.detachAllChildren();
         InitAxis();
         
@@ -159,7 +168,7 @@ public class SaveToFile extends SimpleApplication implements ActionListener{
         Complex previousplotx = new Complex(0,0);
         Complex previousploty = new Complex(0,0);
          
-        for (int i = 1; i < 500; i++)
+        for (int i = 1; i < 1400; i++)
         {
             Complex number = new Complex(i, 0);
             number = number.pow(svalue);
