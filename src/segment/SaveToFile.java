@@ -5,7 +5,9 @@
 package segment;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.font.BitmapText;
 import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
@@ -20,8 +22,16 @@ import java.io.IOException;
  * @author cvillalba
  */
 public class SaveToFile extends SimpleApplication implements ActionListener{
-    private float scale = 100.0f;
-    private float plotscale = 10.0f;
+    private float calcscale = 1.0f;
+    private float plotscalex = 1.0f;
+    private float plotscaley = 1.0f;
+    private float speed = 0.01f;
+    private boolean pause = false;
+    private float currentTime = 0f;
+    private float refreshTime = 0.02f;
+    private float initialImaginary = 0.0f;
+    private BitmapText hudTextReal;
+    private BitmapText hudTextImg;
     
     public static void main(String[] args) {
         SaveToFile app = new SaveToFile();
@@ -116,9 +126,7 @@ public class SaveToFile extends SimpleApplication implements ActionListener{
     
     private Geometry GenerateLine(float r0, float i0, float r1, float i1, int index, int color)
     {
-        float localscale = scale;
-        
-        localscale = 5.0f;
+        float localscale = calcscale;
         
         Vector3f origin = new Vector3f(r0*localscale, i0*localscale, 0f);
         Vector3f destination = new Vector3f(r1*localscale, i1*localscale, 0f);
@@ -144,23 +152,56 @@ public class SaveToFile extends SimpleApplication implements ActionListener{
     public void simpleInitApp() {
         InitAxis();
         
+        InitDisplay();
+        
+        registerInput();
+        
         getCamera().setLocation(new Vector3f(0,0,100));
         getFlyByCamera().setMoveSpeed(50.0f);
         
-        CalculateGraph();
+        CalculateGraph(0.75f, 14.1347251417346937904572519835624702707842571156992431f);
+    }
+    
+    private void InitDisplay()
+    {
+        hudTextReal = new BitmapText(guiFont, false);
+        hudTextReal.setSize(guiFont.getCharSet().getRenderedSize());      // font size
+        hudTextReal.setColor(ColorRGBA.Blue);                             // font color
+        hudTextReal.setText("0");             // the text
+        hudTextReal.setLocalTranslation(300, hudTextReal.getLineHeight(), 0); // position
+        guiNode.attachChild(hudTextReal);
+        
+        hudTextImg = new BitmapText(guiFont, false);
+        hudTextImg.setSize(guiFont.getCharSet().getRenderedSize());      // font size
+        hudTextImg.setColor(ColorRGBA.Blue);                             // font color
+        hudTextImg.setText("1");             // the text
+        hudTextImg.setLocalTranslation(350, hudTextImg.getLineHeight(), 0); // position
+        guiNode.attachChild(hudTextImg);
     }
     
     @Override
     public void simpleUpdate(float tpf) {
-    
+        currentTime += tpf;
+        
+        if (currentTime > refreshTime && !pause)
+        {
+            initialImaginary += speed;
+            
+            hudTextReal.setText("" + new Float(0.5f).toString());
+            hudTextImg.setText("" + new Float(initialImaginary).toString());
+            CalculateGraph(0.5f, initialImaginary);
+            currentTime = 0;
+        }
     }
     
-    private void CalculateGraph() {
+    private void CalculateGraph(float r, float im) {
         rootNode.detachAllChildren();
         InitAxis();
         
         //Complex svalue = new Complex(0.75, 14.1347251417346937904572519835624702707842571156992431);
-        Complex svalue = new Complex(0.75, 14040.1347251417346937904572519835624702707842571156992431);
+        //Complex svalue = new Complex(0.75, 14040.1347251417346937904572519835624702707842571156992431);
+        Complex svalue = new Complex(r, im);
+        
         
         int sign = 1;
 
@@ -179,11 +220,11 @@ public class SaveToFile extends SimpleApplication implements ActionListener{
            
             if (previouspoint != null)
             {
-                Complex newplotx = new Complex(new Double(i).doubleValue()/plotscale,(data.getReal() - previouspoint.getReal())*plotscale);
+                Complex newplotx = new Complex(new Double(i).doubleValue()/plotscalex,(data.getReal() - previouspoint.getReal())*plotscaley);
                 rootNode.attachChild(GenerateLine((float)previousplotx.getReal(), (float)previousplotx.getImaginary(), (float)newplotx.getReal(), (float)newplotx.getImaginary(), i, 0));
                 previousplotx = newplotx;
                 
-                Complex newploty = new Complex(new Double(i).doubleValue()/plotscale,(data.getImaginary() - previouspoint.getImaginary())*plotscale);
+                Complex newploty = new Complex(new Double(i).doubleValue()/plotscalex,(data.getImaginary() - previouspoint.getImaginary())*plotscaley);
                 rootNode.attachChild(GenerateLine((float)previousploty.getReal(), (float)previousploty.getImaginary(), (float)newploty.getReal(), (float)newploty.getImaginary(), i, 1));
                 previousploty = newploty;
                 
@@ -192,9 +233,69 @@ public class SaveToFile extends SimpleApplication implements ActionListener{
             sign *= -1;
         }
     }
+    
+    public void registerInput()
+    {
+        inputManager.addMapping("speedup",new KeyTrigger(keyInput.KEY_R));//save image
+        inputManager.addMapping("speeddown",new KeyTrigger(keyInput.KEY_F));//print data into console
+        inputManager.addMapping("scalexup", new KeyTrigger(keyInput.KEY_T));//save lenght of last pivot into file
+        inputManager.addMapping("scalexdown", new KeyTrigger(keyInput.KEY_G));//clean image
+        inputManager.addMapping("scaleyup", new KeyTrigger(keyInput.KEY_Y));//clean image
+        inputManager.addMapping("scaleydown", new KeyTrigger(keyInput.KEY_H));//clean image
+        inputManager.addMapping("pause", new KeyTrigger(keyInput.KEY_SPACE));//pause simulation
+        inputManager.addListener(this, "speedup");
+        inputManager.addListener(this, "speeddown");
+        inputManager.addListener(this, "scalexup");
+        inputManager.addListener(this, "scalexdown");
+        inputManager.addListener(this, "scaleyup");
+        inputManager.addListener(this, "scaleydown");
+        inputManager.addListener(this, "pause");
+    }
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        if (name.equals("pause") && isPressed)
+        {
+            pause = !pause;
+        }
+        
+        if (name.equals("speedup") && isPressed)
+        {
+            speed += 0.001f;
+        }
+        
+        if (name.equals("speeddown") && isPressed)
+        {
+            speed -= 0.001f;
+            
+            if (speed < 0.0f)
+                speed = 0.0f;
+        }
+        
+        if (name.equals("scalexup") && isPressed)
+        {
+            plotscalex += 1.0f;
+        }
+        
+        if (name.equals("scalexdown") && isPressed)
+        {
+            plotscalex -= 1.0f;
+            
+            if (plotscalex < 1.0f)
+                plotscalex = 1.0f;
+        }
+        
+        if (name.equals("scaleyup") && isPressed)
+        {
+            plotscaley += 1.0f;
+        }
+        
+        if (name.equals("scaleydown") && isPressed)
+        {
+            plotscaley -= 1.0f;
+            
+             if (plotscaley < 1.0)
+                plotscaley = 1.00f;
+        }
     }
 }
