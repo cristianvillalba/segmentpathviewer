@@ -32,7 +32,7 @@ public class SaveToFile extends SimpleApplication implements ActionListener , An
     private boolean plotRorI = true;
     private float currentTime = 0f;
     private float refreshTime = 0.02f;
-    private float initialImaginary = 0.0f;
+    
     private BitmapText hudTextReal;
     private BitmapText hudTextImg;
     private BitmapText hudTextSpeed;
@@ -49,6 +49,8 @@ public class SaveToFile extends SimpleApplication implements ActionListener , An
     private int maxcalc = 600;
     
     private float svaluer = 0.5f;
+    private float initialImaginary = 0.0f;
+    //private float initialImaginary = 14.1347251417346937904572519835624702707842571156992431f;
     
     public static void main(String[] args) {
         SaveToFile app = new SaveToFile();
@@ -178,7 +180,7 @@ public class SaveToFile extends SimpleApplication implements ActionListener , An
         getCamera().setLocation(new Vector3f(0,0,100));
         getFlyByCamera().setMoveSpeed(50.0f);
         
-        CalculateGraph(svaluer, 14.1347251417346937904572519835624702707842571156992431f);
+        CalculateGraph(svaluer, initialImaginary);
     }
     
     private void InitDisplay()
@@ -283,8 +285,6 @@ public class SaveToFile extends SimpleApplication implements ActionListener , An
         rootNode.detachAllChildren();
         InitAxis();
         
-        //Complex svalue = new Complex(0.75, 14.1347251417346937904572519835624702707842571156992431);
-        //Complex svalue = new Complex(0.75, 14040.1347251417346937904572519835624702707842571156992431);
         Complex svalue = new Complex(r, im);
         int sign = 1;
              
