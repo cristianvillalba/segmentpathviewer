@@ -5,6 +5,7 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.RenderManager;
 import com.jme3.scene.Geometry;
@@ -17,7 +18,7 @@ import com.jme3.system.JmeSystem;
 import com.jme3.texture.Image;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
-import com.jme3.texture.image.ColorSpace;
+//import com.jme3.texture.image.ColorSpace;
 import com.jme3.texture.image.ImageRaster;
 import com.jme3.util.BufferUtils;
 import com.jme3.util.TempVars;
@@ -40,6 +41,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
     public float scale = 80.0f;
     public boolean savetofile = false;
     public boolean pausemovement = false;
+    public boolean capturedata = false;
     private ArrayList<PivotNoLimit> allpivots;
     
     private Texture texture;
@@ -51,6 +53,8 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
     private float lasti = 0.0f;
     private int cross = 1;
     private int segmentnumber = 500;
+    private float iaxis = 0.0f;
+    private float iaxistrigger = 0.0f;
     private ArrayList<Float> allcross = new ArrayList<Float>();
     
     private ArrayList<Float> rotspeedconstant = new ArrayList<Float>();
@@ -59,6 +63,9 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
     
     private int prevx = width / 2;
     private int prevy = height/ 2;
+    private Geometry predictionGeometry = null;
+    private double predictedr = 0.0f;
+    private double predictedi = 0.0f;
     
     public static void main(String[] args) {
         MainNoLimit app = new MainNoLimit();
@@ -75,7 +82,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         
         InitSpeeds();
         
-        InitViewer();
+        //InitViewer();
         
         registerInput();
         
@@ -95,6 +102,8 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         rotspeedslower.add(0.5f);
         rotspeedslower.add(0.4f);
         rotspeedslower.add(0.3f);
+        
+        iaxis = 0.0f;
     }
     
     private void InitViewer()
@@ -105,41 +114,48 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         
         Geometry graphRect = new Geometry("GraphRect", new Quad(20, 20));
         graphRect.setMaterial(matl);
-        graphRect.setLocalTranslation(-10, -10, 0);
+        graphRect.setLocalTranslation(-10, -10, -10);
         
         rootNode.attachChild(graphRect);
     }
     
     private void initTexture(){
         ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 4);
-        Image image = new Image(Image.Format.RGBA8, width, height, buffer, ColorSpace.sRGB);
+        //Image image = new Image(Image.Format.RGBA8, width, height, buffer, ColorSpace.sRGB);
 
         // assign the image to a texture...
-        texture = new Texture2D(image);
-        imagefinal = image;
+        //texture = new Texture2D(image);
+        //imagefinal = image;
 
         // set some pixel colors...
-        imageRaster = ImageRaster.create(image);
+        //imageRaster = ImageRaster.create(image);
     }
     
     public void registerInput()
     {
-        inputManager.addMapping("save",new KeyTrigger(keyInput.KEY_1));
-        inputManager.addMapping("print",new KeyTrigger(keyInput.KEY_2));
-        inputManager.addMapping("toggle", new KeyTrigger(keyInput.KEY_3));
-        inputManager.addMapping("clean", new KeyTrigger(keyInput.KEY_4));
-        inputManager.addMapping("pause", new KeyTrigger(keyInput.KEY_SPACE));
+        inputManager.addMapping("save",new KeyTrigger(keyInput.KEY_1));//save image
+        inputManager.addMapping("print",new KeyTrigger(keyInput.KEY_2));//print data into console
+        inputManager.addMapping("toggle", new KeyTrigger(keyInput.KEY_3));//save lenght of last pivot into file
+        inputManager.addMapping("clean", new KeyTrigger(keyInput.KEY_4));//clean image
+        inputManager.addMapping("capture", new KeyTrigger(keyInput.KEY_5));//clean image
+        inputManager.addMapping("pause", new KeyTrigger(keyInput.KEY_SPACE));//pause simulation
         inputManager.addListener(this, "save");
         inputManager.addListener(this, "print");
         inputManager.addListener(this, "toggle");
         inputManager.addListener(this, "clean");
         inputManager.addListener(this, "pause");
+        inputManager.addListener(this, "capture");
     }
     
-    private Geometry GenerateLine(float r0, float i0, float r1, float i1, int index)
+    private Geometry GenerateLine(float r0, float i0, float r1, float i1, int index, boolean usescale)
     {
-        Vector3f origin = new Vector3f(r0*scale, i0*scale, 0f);
-        Vector3f destination = new Vector3f(r1*scale, i1*scale, 0f);
+        float localscale = scale;
+        
+        if (!usescale)
+            localscale = 5.0f;
+        
+        Vector3f origin = new Vector3f(r0*localscale, i0*localscale, 0f);
+        Vector3f destination = new Vector3f(r1*localscale, i1*localscale, 0f);
         
         Line linexp = new Line(origin, destination);
         
@@ -164,28 +180,28 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         
         Geometry linexpos = new Geometry("xaxispos", linexp);
         Material mat1 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat1.setColor("Color", ColorRGBA.White);
+        mat1.setColor("Color", ColorRGBA.Gray);
         linexpos.setMaterial(mat1);
         
         Line linexn = new Line(Vector3f.ZERO, Vector3f.UNIT_X.mult(-500));
         
         Geometry linexneg = new Geometry("xaxisneg", linexn);
         Material mat2 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat2.setColor("Color", ColorRGBA.White);
+        mat2.setColor("Color", ColorRGBA.Gray);
         linexneg.setMaterial(mat2);
         
         Line lineyp = new Line(Vector3f.ZERO, Vector3f.UNIT_Y.mult(500));
         
         Geometry lineypos = new Geometry("yaxispos", lineyp);
         Material mat3 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat3.setColor("Color", ColorRGBA.White);
+        mat3.setColor("Color", ColorRGBA.Gray);
         lineypos.setMaterial(mat3);
         
         Line lineyn = new Line(Vector3f.ZERO, Vector3f.UNIT_Y.mult(-500));
         
         Geometry lineyneg = new Geometry("yaxisneg", lineyn);
         Material mat4 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat4.setColor("Color", ColorRGBA.White);
+        mat4.setColor("Color", ColorRGBA.Gray);
         lineyneg.setMaterial(mat4);
         
         Node realaxis = new Node();
@@ -203,7 +219,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
     {        
         for (int i = 0; i < segmentnumber ; i++)
         {
-            PivotNoLimit pivot = new PivotNoLimit(rootNode, assetManager, i, 0.0f); //last parameter is segment size
+            PivotNoLimit pivot = new PivotNoLimit(rootNode, assetManager, i, 0.0f, true); //last parameter is segment size
             
             allpivots.add(pivot);
         }
@@ -216,6 +232,19 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         
         if (pausemovement)
             return;
+        
+        iaxis += tpf;
+        
+        if (predictionGeometry != null)
+        {
+            predictionGeometry.removeFromParent();
+        }
+        
+        PredictFunction(0.5f, iaxis);
+        
+        predictionGeometry = GenerateLine(0.0f, 0.0f, (float)predictedr,(float)predictedi, 666, false);
+        rootNode.attachChild(predictionGeometry);
+        
         
         for(int i = 1; i < allpivots.size(); i++)
         {
@@ -230,7 +259,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
             //pivotNode.rotate(0.0f, 0.0f, -tpf*(0.5f-i*0.1f));//slower rotation on each segment
             
             //System.out.println("log: " + Math.log(i));
-            pivotNode.rotate(0.0f, 0.0f, (float)(-tpf*0.5f*Math.log(i + 1))); //attempt to draw ETA based on segment rotation speed (with a ln formula)
+            pivotNode.rotate(0.0f, 0.0f, (float)(-tpf*1.0f*Math.log(i + 1))); //attempt to draw ETA based on segment rotation speed (with a ln formula)
             
             //hardcoded speeds
             //pivotNode.rotate(0.0f, 0.0f, -tpf*rotspeedconstant.get(i));
@@ -252,7 +281,7 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
                 
                 if (Math.abs(pivotEnd.getWorldTranslation().length()) < 0.1f)
                 {
-                    savezero = true;
+                    //savezero = true;
                 }
 
                 x += width / 2 ;
@@ -260,8 +289,8 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
 
                 if (x >= 0 && x < width && y >= 0 && y < height)
                 {
-                    imageRaster.setPixel(x, y, ColorRGBA.Red);
-                    this.plotLine(this.findLine(prevx, prevy, x, y));
+                    //imageRaster.setPixel(x, y, ColorRGBA.Red);
+                    //this.plotLine(this.findLine(prevx, prevy, x, y));
                             
                     prevx = x;
                     prevy = y;
@@ -270,6 +299,15 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
                 if (savetofile)
                 {
                     WriteToFile("retamodule.csv", "" + pivotEnd.getWorldTranslation().length() + "\n");
+                }
+                
+                if (capturedata)
+                {
+                    if (iaxis > iaxistrigger)
+                    {
+                        WriteToFile("capture.csv", iaxis + "," + pivotEnd.getWorldTranslation().x + "," + pivotEnd.getWorldTranslation().y + "\n");
+                        iaxistrigger = iaxis + FastMath.nextRandomFloat();
+                    }
                 }
                 
                 lasti = pivotEnd.getWorldTranslation().y;
@@ -365,6 +403,15 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         {
             pausemovement = !pausemovement;
         }
+        
+        if (name.contains("capture") && isPressed)
+        {
+            capturedata = !capturedata;
+            if (capturedata)
+            {
+                iaxistrigger = iaxis + FastMath.nextRandomFloat();
+            }
+        }
     }
     
     public void cleanImage()
@@ -435,6 +482,18 @@ public class MainNoLimit extends SimpleApplication implements ActionListener{
         {
             imageRaster.setPixel(data.get(i).x, data.get(i).y, ColorRGBA.Blue);
         }
+    }
+    
+    private void PredictFunction(float r, float i)
+    {
+        Complex input = new Complex(r, i);
+        
+        Complex alpha = new Complex(-0.29443592f, - 0.39423183);
+        
+        Complex result = alpha.divide(input.exp().sin()).cos();
+        
+        predictedr = result.getReal();
+        predictedi = result.getImaginary();
     }
 }
 
